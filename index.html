@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seu Condomínio - Tarefas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f0f4f7;
+      font-family: Arial, sans-serif;
+    }
+    .navbar {
+      background-color: #007bff;
+    }
+    .navbar-brand {
+       }
+    .card-tarefa {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .campo-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .comentario {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .comentario small {
+      display: block;
+      font-size: 0.75rem;
+      color: gray;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .comentario-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .comentario-texto {
+      flex-grow: 1;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark mb-3">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">Seu Condomínio</span>
+      <button id="btnNovaTarefa" class="btn btn-sm btn-light">Cadastrar Tarefa</button>
+    </div>
+  </nav>
+
+  <div class="container" id="containerFormularioTarefa" style="display: none;">
+    <div class="card-tarefa">
+      <h5 id="formTitulo">Nova Tarefa</h5>
+      <form id="formTarefa">
+        <input type="hidden" id="indiceEdicao" />
+        <div class="mb-2">
+          <label class="campo-label">Nome da Tarefa</label>
+          <input type="text" class="form-control" id="titulo" required />
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="campo-label">Início</label>
+            <input type="date" class="form-control" id="dataInicio" required />
+          </div>
+          <div class="col">
+            <label class="campo-label">Conclusão</label>
+            <input type="date" class="form-control" id="dataConclusao" required />
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="campo-label">Custo Estimado (R$)</label>
+            <input type="number" class="form-control" id="valorEstimado" min="0" step="0.01" />
+          </div>
+          <div class="col">
+            <label class="campo-label">Status da Tarefa</label>
+            <select class="form-select" id="statusTarefa">
+              <option value="Pendente">Pendente</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Não finalizada">Não finalizada</option>
+              <option value="Finalizada com êxito">Finalizada com êxito</option>
+              <option value="Suspensa">Suspensa</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-2">
+          <button type="submit" class="btn btn-success">Salvar</button>
+          <button type="reset" class="btn btn-secondary" onclick="cancelarEdicao()">Voltar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="container" id="listaContainer"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      const tarefas = [];
+
+      $('#btnNovaTarefa').click(function () {
+        limparFormulario();
+        $('#containerFormularioTarefa').show();
+      });
+
+      $('#formTarefa').on('submit', function (e) {
+        e.preventDefault();
+
+        const tarefa = {
+          titulo: $('#titulo').val(),
+          inicio: $('#dataInicio').val(),
+          conclusao: $('#dataConclusao').val(),
+          custo: $('#valorEstimado').val(),
+          status: $('#statusTarefa').val(),
+          comentarios: []
+        };
+
+        const indice = $('#indiceEdicao').val();
+
+        if (indice === '') {
+          tarefas.push(tarefa);
+        } else {
+          tarefas[indice] = tarefa;
+        }
+
+        atualizarLista();
+        limparFormulario();
+        $('#containerFormularioTarefa').hide();
+      });
+
+      window.atualizarLista = function () {
+        $('#listaContainer').empty();
+        tarefas.forEach((tarefa, index) => {
+          const tarefaHtml = `
+            <div class="card-tarefa">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6>${tarefa.titulo}</h6>
+                <div>
+                  <button class="btn btn-sm btn-warning me-2" onclick="editarTarefa(${index})"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-danger" onclick="excluirTarefa(${index})"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>
+              <p><strong>Início:</strong> ${tarefa.inicio} | <strong>Conclusão:</strong> ${tarefa.conclusao}</p>
+              <p><strong>Custo Estimado:</strong> R$ ${tarefa.custo} | <strong>Status:</strong> ${tarefa.status}</p>
+              <div>
+                <label class="campo-label">Comentários</label>
+                <div id="comentarios-${index}"></div>
+                <textarea class="form-control mb-2" id="inputComentario-${index}" placeholder="Escreva um comentário..."></textarea>
+                <button class="btn btn-primary btn-sm" onclick="adicionarComentario(${index})">Enviar Comentário</button>
+              </div>
+            </div>
+          `;
+          $('#listaContainer').append(tarefaHtml);
+
+          if (tarefa.comentarios) {
+            tarefa.comentarios.forEach((comentario, ci) => {
+              adicionarComentarioHtml(index, comentario, ci);
+            });
+          }
+        });
+      };
+
+      window.adicionarComentario = function (index) {
+        const texto = $(`#inputComentario-${index}`).val();
+        if (!texto) return;
+        const comentario = {
+          texto,
+          data: new Date().toLocaleString()
+        };
+        tarefas[index].comentarios.push(comentario);
+        atualizarLista();
+      };
+
+      function adicionarComentarioHtml(index, comentario, ci) {
+        const avatar = "https://robohash.org/default?set=set1&size=40x40";
+        const comentarioHtml = `
+          <div class="comentario-container mb-2">
+            <img src="${avatar}" class="avatar" />
+            <div class="comentario-texto">
+              <div class="comentario">
+                <strong>Usuário</strong>
+                <p>${comentario.texto}</p>
+                <small>${comentario.data}</small>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="removerComentario(${index}, ${ci})"><i class="bi bi-x"></i></button>
+          </div>
+        `;
+        $(`#comentarios-${index}`).append(comentarioHtml);
+      }
+
+      window.removerComentario = function (index, ci) {
+        tarefas[index].comentarios.splice(ci, 1);
+        atualizarLista();
+      };
+
+      window.editarTarefa = function (index) {
+        const tarefa = tarefas[index];
+        $('#formTitulo').text('Editar Tarefa');
+        $('#indiceEdicao').val(index);
+        $('#titulo').val(tarefa.titulo);
+        $('#dataInicio').val(tarefa.inicio);
+        $('#dataConclusao').val(tarefa.conclusao);
+        $('#valorEstimado').val(tarefa.custo);
+        $('#statusTarefa').val(tarefa.status);
+        $('#containerFormularioTarefa').show();
+      };
+
+      window.excluirTarefa = function (index) {
+        tarefas.splice(index, 1);
+        atualizarLista();
+      };
+
+      window.cancelarEdicao = function () {
+        limparFormulario();
+        $('#containerFormularioTarefa').hide();
+      };
+
+      function limparFormulario() {
+        $('#formTitulo').text('Nova Tarefa');
+        $('#indiceEdicao').val('');
+        $('#formTarefa')[0].reset();
+      }
+    });
+  </script>
+</body>
+</html>
